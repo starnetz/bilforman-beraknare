@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server';
 
+// Definiera en korrekt typ för SCB API datan
+interface SCBDataItem {
+  key: string[];
+  values: string[];
+}
+
 export async function GET() {
   try {
     console.log('Anropar SCB API med specificerad query...');
@@ -110,7 +116,7 @@ export async function GET() {
       
     // Om vi har data från SCB API i rätt format, använd det
     if (data && data.data) {
-      const kommuner = data.data.map((item: any) => {
+      const kommuner = data.data.map((item: SCBDataItem) => {
         const kod = item.key[0];
         return {
           code: kod,
