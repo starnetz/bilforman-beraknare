@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server';
 
-// Definiera en korrekt typ för SCB API datan
+// Definiera korrekta typer för SCB API datan
 interface SCBDataItem {
   key: string[];
   values: string[];
+}
+
+interface SCBResponse {
+  data?: SCBDataItem[];
+  columns?: Array<{code: string, text: string, type: string}>;
+  comments?: Array<string>;
+  // Andra möjliga fält i responsen
+  [key: string]: unknown;
 }
 
 export async function GET() {
@@ -82,7 +90,7 @@ export async function GET() {
     }
 
     // Hämta JSON istället för PX-format
-    const data = await response.json();
+    const data = await response.json() as SCBResponse;
     console.log('SCB API svar struktur:', Object.keys(data));
     
     // Skapa en mappning för kommunnamn baserat på koder
