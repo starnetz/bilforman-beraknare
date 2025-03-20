@@ -3,6 +3,11 @@
 import { useState, useEffect } from 'react';
 import { Kommun, Bil, BerakningsResultat, ValideringsFel } from '@/types';
 
+interface SCBDataItem {
+  key: string[];
+  values: string[];
+}
+
 export default function Home() {
   const [bruttolon, setBruttolon] = useState<number>(0);
   const [valdKommun, setValdKommun] = useState<string>('');
@@ -30,7 +35,7 @@ export default function Home() {
           throw new Error('Kunde inte hämta kommunalskatter');
         }
         const data = await response.json();
-        const kommunerData = data.value.map((item: any) => ({
+        const kommunerData = data.value.map((item: SCBDataItem) => ({
           code: item.key[0],
           name: item.key[1],
           kommunalskatt: parseFloat(item.values[0])

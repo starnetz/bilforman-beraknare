@@ -39,7 +39,8 @@ export async function GET() {
 
     const data = await response.json();
     return NextResponse.json(data);
-  } catch (error) {
+  } catch (error: unknown) {
+    console.error('Kunde inte hämta kommunalskatter:', error);
     return NextResponse.json({ error: 'Kunde inte hämta kommunalskatter' }, { status: 500 });
   }
 } 
