@@ -46,54 +46,133 @@ export default function Home() {
           throw new Error(data.error);
         }
         
-        // Anpassa till korrekt format baserat på faktisk respons
-        let kommunerData: Kommun[] = [];
-        
-        if (data.data && Array.isArray(data.data)) {
-          console.log('Använder data.data-formatet, första item:', data.data[0]);
-          kommunerData = data.data
-            .filter((item: SCBDataItem) => 
-              item.key && 
-              item.key.length >= 2 && 
-              item.values && 
-              item.values.length > 0 &&
-              // Filtrera bort icke-kommuner (t.ex. län, riket)
-              item.key[0].length >= 4
-            )
-            .map((item: SCBDataItem) => ({
-              code: item.key[0],
-              name: item.key[1],
-              kommunalskatt: parseFloat(item.values[0])
-            }));
-        } else if (data.value && Array.isArray(data.value)) {
-          console.log('Använder data.value-formatet, första item:', data.value[0]);
-          kommunerData = data.value
-            .filter((item: SCBDataItem) => 
-              item.key && 
-              item.key.length >= 2 && 
-              item.values && 
-              item.values.length > 0 &&
-              // Filtrera bort icke-kommuner (t.ex. län, riket)
-              item.key[0].length >= 4
-            )
-            .map((item: SCBDataItem) => ({
-              code: item.key[0],
-              name: item.key[1],
-              kommunalskatt: parseFloat(item.values[0])
-            }));
+        // Hantera PX-format från SCB API
+        if (typeof data === 'string' && data.includes('HEADING=')) {
+          console.log('PX-format detekterat, bearbetar data...');
+          
+          // Förenkla PX-formatet för att hämta kommuner
+          const rows = data.split('\n');
+          let kommunerData: Kommun[] = [];
+          
+          // Hitta VALUES-sektionen för regioner
+          const valuesStart = rows.findIndex(row => row.startsWith('VALUES("Region"'))+1;
+          
+          if (valuesStart > 0) {
+            let i = valuesStart;
+            let regionCodes: string[] = [];
+            
+            // Samla alla regionkoder
+            while (i < rows.length && !rows[i].includes(';')) {
+              const code = rows[i].trim().replace(/"/g, '');
+              if (code.length > 0) {
+                regionCodes.push(code);
+              }
+              i++;
+            }
+            
+            // Hitta STUB-sektionen för att få namngivningsinformation
+            const stubStart = rows.findIndex(row => row.startsWith('STUB="Region"'))+1;
+            let regionNames: string[] = [];
+            
+            if (stubStart > 0) {
+              i = stubStart;
+              while (i < rows.length && !rows[i].includes(';')) {
+                const name = rows[i].trim().replace(/"/g, '');
+                if (name.length > 0) {
+                  regionNames.push(name);
+                }
+                i++;
+              }
+            }
+            
+            // Hitta DATA-sektionen
+            const dataStart = rows.findIndex(row => row.startsWith('DATA='))+1;
+            let taxValues: string[] = [];
+            
+            if (dataStart > 0) {
+              i = dataStart;
+              while (i < rows.length && !rows[i].includes(';')) {
+                const value = rows[i].trim();
+                if (value.length > 0) {
+                  taxValues.push(value);
+                }
+                i++;
+              }
+            }
+            
+            // Skapa kommuner-array
+            for (let j = 0; j < regionCodes.length; j++) {
+              const code = regionCodes[j];
+              // Filtrera bort län, riket, etc.
+              if (code.length >= 4) {
+                kommunerData.push({
+                  code: code,
+                  name: regionNames[j] || code,
+                  kommunalskatt: parseFloat(taxValues[j] || '0')
+                });
+              }
+            }
+            
+            console.log(`Bearbetad PX-data: ${kommunerData.length} kommuner hittades`);
+            if (kommunerData.length > 0) {
+              console.log('Första kommun:', kommunerData[0]);
+            }
+          } else {
+            throw new Error('Kunde inte hitta regioner i PX-formatet');
+          }
+          
+          // Sortera kommuner efter namn
+          kommunerData.sort((a, b) => a.name.localeCompare(b.name));
+          setKommuner(kommunerData);
         } else {
-          throw new Error('Okänt dataformat från SCB API. Data: ' + JSON.stringify(data).substring(0, 200));
+          // Fallback till att hantera JSON-format om det inte är PX-format
+          let kommunerData: Kommun[] = [];
+          
+          if (data.data && Array.isArray(data.data)) {
+            console.log('Använder data.data-formatet, första item:', data.data[0]);
+            kommunerData = data.data
+              .filter((item: SCBDataItem) => 
+                item.key && 
+                item.key.length >= 2 && 
+                item.values && 
+                item.values.length > 0 &&
+                // Filtrera bort icke-kommuner (t.ex. län, riket)
+                item.key[0].length >= 4
+              )
+              .map((item: SCBDataItem) => ({
+                code: item.key[0],
+                name: item.key[1],
+                kommunalskatt: parseFloat(item.values[0])
+              }));
+          } else if (data.value && Array.isArray(data.value)) {
+            console.log('Använder data.value-formatet, första item:', data.value[0]);
+            kommunerData = data.value
+              .filter((item: SCBDataItem) => 
+                item.key && 
+                item.key.length >= 2 && 
+                item.values && 
+                item.values.length > 0 &&
+                // Filtrera bort icke-kommuner (t.ex. län, riket)
+                item.key[0].length >= 4
+              )
+              .map((item: SCBDataItem) => ({
+                code: item.key[0],
+                name: item.key[1],
+                kommunalskatt: parseFloat(item.values[0])
+              }));
+          } else {
+            throw new Error('Okänt dataformat från SCB API. Data: ' + JSON.stringify(data).substring(0, 200));
+          }
+          
+          console.log(`Bearbetad JSON-data: ${kommunerData.length} kommuner hittades`);
+          if (kommunerData.length > 0) {
+            console.log('Första kommun:', kommunerData[0]);
+          }
+          
+          // Sortera kommuner efter namn
+          kommunerData.sort((a, b) => a.name.localeCompare(b.name));
+          setKommuner(kommunerData);
         }
-        
-        console.log(`Bearbetad data: ${kommunerData.length} kommuner hittades`);
-        if (kommunerData.length > 0) {
-          console.log('Första kommun:', kommunerData[0]);
-        }
-        
-        // Sortera kommuner efter namn
-        kommunerData.sort((a, b) => a.name.localeCompare(b.name));
-        
-        setKommuner(kommunerData);
       } catch (error) {
         console.error('Fel vid hämtning av kommunalskatter:', error);
         setApiFel(error instanceof Error ? error.message : 'Kunde inte hämta kommunalskatter. Försök igen senare.');
