@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Förmånsbilskostnadsberäkning
 
-## Getting Started
+En webbapplikation för att beräkna kostnaden för en förmånsbil, inklusive skatter och ackumulerade kostnader över tid.
 
-First, run the development server:
+## Funktioner
 
+- Beräkning av förmånsbilskostnad baserat på:
+  - Bruttolön
+  - Kommun
+  - Bilinformation (märke, modell, årsmodell, etc.)
+  - Registreringsnummer (valfritt)
+- Visar:
+  - Brutto- och nettokostnad per månad
+  - Lön efter skatt
+  - Lön efter skatt och förmån
+  - Ackumulerad kostnad över valt antal år
+
+## Teknisk stack
+
+- Next.js 14
+- TypeScript
+- Tailwind CSS
+- SCB API för kommunalskatter
+- Skatteverket API för bilförmåner
+
+## Installation
+
+1. Klona repot:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone [repo-url]
+cd bilforman-beraknare
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Installera beroenden:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Starta utvecklingsservern:
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Öppna [http://localhost:3000](http://localhost:3000) i din webbläsare.
 
-## Learn More
+## Deployment
 
-To learn more about Next.js, take a look at the following resources:
+Applikationen är konfigurerad för deployment på Vercel. Koppla ditt GitHub-repo till Vercel för automatisk deployment vid push till main-branchen.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## API-nycklar
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+För att använda Skatteverkets API behöver du registrera dig för en API-nyckel på deras utvecklarportal. Lägg till din API-nyckel i en `.env.local` fil:
 
-## Deploy on Vercel
+```
+SKATTEVERKET_API_KEY=din-api-nyckel
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Licens
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
