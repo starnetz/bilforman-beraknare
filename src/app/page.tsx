@@ -30,20 +30,53 @@ export default function Home() {
     const hämtaKommunalskatter = async () => {
       try {
         setLaddar(true);
+        setApiFel('');
+        console.log('Hämtar kommunalskatter...');
+        
         const response = await fetch('/api/kommunalskatt');
+        
         if (!response.ok) {
-          throw new Error('Kunde inte hämta kommunalskatter');
+          throw new Error(`Kunde inte hämta kommunalskatter. Status: ${response.status}`);
         }
+        
         const data = await response.json();
-        const kommunerData = data.value.map((item: SCBDataItem) => ({
-          code: item.key[0],
-          name: item.key[1],
-          kommunalskatt: parseFloat(item.values[0])
-        }));
+        console.log('Mottagen data:', data);
+        
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        
+        // Se till att data-strukturen existerar
+        if (!data || !data.data || !Array.isArray(data.data)) {
+          throw new Error('Ogiltig datastruktur från SCB API');
+        }
+        
+        // Anpassa till korrekt format baserat på faktisk respons
+        let kommunerData;
+        
+        if (data.value && Array.isArray(data.value)) {
+          // Om datan är i format { value: [{ key: [kod, namn], values: [skatt] }] }
+          kommunerData = data.value.map((item: SCBDataItem) => ({
+            code: item.key[0],
+            name: item.key[1],
+            kommunalskatt: parseFloat(item.values[0])
+          }));
+        } else if (data.data) {
+          // Om datan är i format { data: [{ key: [kod, namn], values: [skatt] }] }
+          kommunerData = data.data.map((item: SCBDataItem) => ({
+            code: item.key[0],
+            name: item.key[1],
+            kommunalskatt: parseFloat(item.values[0])
+          }));
+        } else {
+          throw new Error('Okänt dataformat från SCB API');
+        }
+        
+        console.log('Bearbetad data:', kommunerData);
         setKommuner(kommunerData);
       } catch (error) {
-        console.error('Kunde inte hämta kommunalskatter:', error);
-        setApiFel('Kunde inte hämta kommunalskatter. Försök igen senare.');
+        console.error('Fel vid hämtning av kommunalskatter:', error);
+        setApiFel(error instanceof Error ? error.message : 'Kunde inte hämta kommunalskatter. Försök igen senare.');
       } finally {
         setLaddar(false);
       }
@@ -180,6 +213,7 @@ export default function Home() {
                 value={valdKommun}
                 onChange={(e) => setValdKommun(e.target.value)}
                 className={`w-full p-2 border rounded ${fel.kommun ? 'border-red-500' : ''}`}
+                disabled={laddar || kommuner.length === 0}
               >
                 <option value="">Välj kommun</option>
                 {kommuner.map((kommun) => (
@@ -189,6 +223,9 @@ export default function Home() {
                 ))}
               </select>
               {fel.kommun && <p className="text-red-500 text-sm mt-1">{fel.kommun}</p>}
+              {kommuner.length === 0 && !apiFel && (
+                <p className="text-gray-500 text-sm mt-1">Laddar kommuner...</p>
+              )}
             </div>
 
             <div>
@@ -273,9 +310,9 @@ export default function Home() {
 
             <button
               onClick={beräknaKostnad}
-              disabled={laddar}
+              disabled={laddar || kommuner.length === 0}
               className={`w-full p-3 rounded text-white font-medium ${
-                laddar
+                laddar || kommuner.length === 0
                   ? 'bg-blue-400 cursor-not-allowed'
                   : 'bg-blue-500 hover:bg-blue-600'
               }`}
